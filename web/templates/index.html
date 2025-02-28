@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{.site_name}} - 专业的养生、中医和修行知识平台</title>
+    <meta name="description" content="{{.site_description}}">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/app.js" defer></script>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <a href="/">
+                    <img src="/static/images/logo.png" alt="{{.site_name}}">
+                </a>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/">首页</a></li>
+                    <li><a href="/categories/中医理论">中医理论</a></li>
+                    <li><a href="/categories/养生方法">养生方法</a></li>
+                    <li><a href="/categories/修行技巧">修行技巧</a></li>
+                    <li><a href="/about">关于我们</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <section class="hero">
+            <div class="container">
+                <h1>探索传统智慧，提升生活品质</h1>
+                <p>汇集中医养生、修行智慧，助您平衡身心，健康生活</p>
+                <div class="search-box">
+                    <input type="text" placeholder="搜索关键词...">
+                    <button>搜索</button>
+                </div>
+            </div>
+        </section>
+
+        <section class="featured-articles">
+            <div class="container">
+                <h2>精选文章</h2>
+                <div class="article-grid" id="featured-articles">
+                    <!-- 文章将通过JavaScript动态加载 -->
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </section>
+
+        <section class="categories">
+            <div class="container">
+                <h2>分类浏览</h2>
+                <div class="category-grid" id="categories">
+                    <!-- 分类将通过JavaScript动态加载 -->
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="/static/images/logo.png" alt="{{.site_name}}">
+                    <p>{{.site_description}}</p>
+                </div>
+                <div class="footer-links">
+                    <h3>快速链接</h3>
+                    <ul>
+                        <li><a href="/">首页</a></li>
+                        <li><a href="/categories/中医理论">中医理论</a></li>
+                        <li><a href="/categories/养生方法">养生方法</a></li>
+                        <li><a href="/categories/修行技巧">修行技巧</a></li>
+                        <li><a href="/about">关于我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h3>联系我们</h3>
+                    <p>邮箱: contact@example.com</p>
+                    <p>电话: 123-456-7890</p>
+                    <div class="social-links">
+                        <a href="#" target="_blank">微信</a>
+                        <a href="#" target="_blank">微博</a>
+                        <a href="#" target="_blank">知乎</a>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2023 {{.site_name}}. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 页面加载完成后获取数据
+        document.addEventListener('DOMContentLoaded', function () {
+            // 获取精选文章
+            fetch('/api/articles?page=1&page_size=6&status=published')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200 && data.data.items.length > 0) {
+                        const articlesContainer = document.getElementById('featured-articles');
+                        articlesContainer.innerHTML = '';
+
+                        data.data.items.forEach(article => {
+                            const articleElement = document.createElement('div');
+                            articleElement.className = 'article-card';
+                            articleElement.innerHTML = `
+                                <h3><a href="/health/${article.slug}">${article.title}</a></h3>
+                                <p>${article.summary}</p>
+                                <div class="article-meta">
+                                    <span class="date">${new Date(article.published_at).toLocaleDateString()}</span>
+                                    <span class="views">${article.view_count} 阅读</span>
+                                </div>
+                            `;
+                            articlesContainer.appendChild(articleElement);
+                        });
+                    } else {
+                        document.getElementById('featured-articles').innerHTML = '<p>暂无文章</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('获取文章失败:', error);
+                    document.getElementById('featured-articles').innerHTML = '<p>加载失败，请稍后再试</p>';
+                });
+
+            // 获取分类
+            fetch('/api/categories/tree')
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200 && data.data.length > 0) {
+                        const categoriesContainer = document.getElementById('categories');
+                        categoriesContainer.innerHTML = '';
+
+                        data.data.forEach(category => {
+                            const categoryElement = document.createElement('div');
+                            categoryElement.className = 'category-card';
+
+                            let childrenHTML = '';
+                            if (category.children && category.children.length > 0) {
+                                childrenHTML = '<ul>';
+                                category.children.forEach(child => {
+                                    childrenHTML += `<li><a href="/categories/${child.name}">${child.name}</a></li>`;
+                                });
+                                childrenHTML += '</ul>';
+                            }
+
+                            categoryElement.innerHTML = `
+                                <h3><a href="/categories/${category.name}">${category.name}</a></h3>
+                                ${childrenHTML}
+                            `;
+                            categoriesContainer.appendChild(categoryElement);
+                        });
+                    } else {
+                        document.getElementById('categories').innerHTML = '<p>暂无分类</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('获取分类失败:', error);
+                    document.getElementById('categories').innerHTML = '<p>加载失败，请稍后再试</p>';
+                });
+        });
+    </script>
+</body>
+
+</html>

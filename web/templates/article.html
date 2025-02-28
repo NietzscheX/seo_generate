@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title id="page-title">文章详情 - {{.site_name}}</title>
+    <meta name="description" id="page-description" content="">
+    <link rel="stylesheet" href="/static/css/style.css">
+    <script src="/static/js/app.js" defer></script>
+    <link rel="canonical" id="canonical-link" href="">
+    <script id="article-schema" type="application/ld+json"></script>
+</head>
+
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">
+                <a href="/">
+                    <img src="/static/images/logo.png" alt="{{.site_name}}">
+                </a>
+            </div>
+            <nav>
+                <ul>
+                    <li><a href="/">首页</a></li>
+                    <li><a href="/categories/中医理论">中医理论</a></li>
+                    <li><a href="/categories/养生方法">养生方法</a></li>
+                    <li><a href="/categories/修行技巧">修行技巧</a></li>
+                    <li><a href="/about">关于我们</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        <article class="article-content">
+            <div class="container">
+                <div class="article-header">
+                    <h1 id="article-title">加载中...</h1>
+                    <div class="article-meta">
+                        <span class="date" id="article-date">--</span>
+                        <span class="views" id="article-views">-- 阅读</span>
+                    </div>
+                    <div class="article-categories" id="article-categories">
+                        <!-- 分类将通过JavaScript动态加载 -->
+                    </div>
+                    <div class="article-keywords" id="article-keywords">
+                        <!-- 关键词将通过JavaScript动态加载 -->
+                    </div>
+                </div>
+
+                <div class="article-body" id="article-content">
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </article>
+
+        <section class="related-articles">
+            <div class="container">
+                <h2>相关文章</h2>
+                <div class="article-grid" id="related-articles">
+                    <!-- 相关文章将通过JavaScript动态加载 -->
+                    <div class="loading">加载中...</div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-logo">
+                    <img src="/static/images/logo.png" alt="{{.site_name}}">
+                    <p>{{.site_description}}</p>
+                </div>
+                <div class="footer-links">
+                    <h3>快速链接</h3>
+                    <ul>
+                        <li><a href="/">首页</a></li>
+                        <li><a href="/categories/中医理论">中医理论</a></li>
+                        <li><a href="/categories/养生方法">养生方法</a></li>
+                        <li><a href="/categories/修行技巧">修行技巧</a></li>
+                        <li><a href="/about">关于我们</a></li>
+                    </ul>
+                </div>
+                <div class="footer-contact">
+                    <h3>联系我们</h3>
+                    <p>邮箱: contact@example.com</p>
+                    <p>电话: 123-456-7890</p>
+                    <div class="social-links">
+                        <a href="#" target="_blank">微信</a>
+                        <a href="#" target="_blank">微博</a>
+                        <a href="#" target="_blank">知乎</a>
+                    </div>
+                </div>
+            </div>
+            <div class="copyright">
+                <p>&copy; 2023 {{.site_name}}. 保留所有权利。</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // 获取文章slug
+        const slug = '{{.slug}}';
+
+        // 页面加载完成后获取数据
+        document.addEventListener('DOMContentLoaded', function () {
+            // 获取文章详情
+            fetch(`/api/articles/slug/${slug}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.code === 200 && data.data.article) {
+                        const article = data.data.article;
+
+                        // 更新页面标题和描述
+                        document.getElementById('page-title').textContent = `${article.title} - {{.site_name}}`;
+                        document.getElementById('page-description').content = article.meta_desc || article.summary;
+
+                        // 更新规范链接
+                        document.getElementById('canonical-link').href = `/health/${article.slug}`;
+
+                        // 更新结构化数据
+                        document.getElementById('article-schema').textContent = data.data.schema;
+
+                        // 更新文章内容
+                        document.getElementById('article-title').textContent = article.title;
+                        document.getElementById('article-date').textContent = new Date(article.published_at || article.created_at).toLocaleDateString();
+                        document.getElementById('article-views').textContent = `${article.view_count} 阅读`;
+
+                        // 渲染Markdown内容
+                        const contentElement = document.getElementById('article-content');
+                        contentElement.innerHTML = renderMarkdown(article.content);
+
+                        // 更新分类
+                        const categoriesElement = document.getElementById('article-categories');
+                        categoriesElement.innerHTML = '';
+                        if (article.categories && article.categories.length > 0) {
+                            article.categories.forEach(category => {
+                                const categoryLink = document.createElement('a');
+                                categoryLink.href = `/categories/${category.name}`;
+                                categoryLink.textContent = category.name;
+                                categoriesElement.appendChild(categoryLink);
+                            });
+                        }
+
+                        // 更新关键词
+                        const keywordsElement = document.getElementById('article-keywords');
+                        keywordsElement.innerHTML = '';
+                        if (article.keywords && article.keywords.length > 0) {
+                            article.keywords.forEach(keyword => {
+                                const keywordSpan = document.createElement('span');
+                                keywordSpan.className = 'keyword';
+                                keywordSpan.textContent = keyword.word;
+                                keywordsElement.appendChild(keywordSpan);
+                            });
+                        }
+
+                        // 获取相关文章
+                        getRelatedArticles(article.id);
+                    } else {
+                        document.getElementById('article-title').textContent = '文章不存在';
+                        document.getElementById('article-content').innerHTML = '<p>抱歉，找不到该文章。</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('获取文章失败:', error);
+                    document.getElementById('article-title').textContent = '加载失败';
+                    document.getElementById('article-content').innerHTML = '<p>加载失败，请稍后再试。</p>';
+                });
+        });
+
+        // 获取相关文章
+        function getRelatedArticles(articleId) {
+            fetch(`/api/articles/related/${articleId}?limit=3`)
+                .then(response => response.json())
+                .then(data => {
+                    const relatedArticlesElement = document.getElementById('related-articles');
+                    relatedArticlesElement.innerHTML = '';
+
+                    if (data.code === 200 && data.data.length > 0) {
+                        data.data.forEach(article => {
+                            const articleElement = document.createElement('div');
+                            articleElement.className = 'article-card';
+                            articleElement.innerHTML = `
+                                <h3><a href="/health/${article.slug}">${article.title}</a></h3>
+                                <p>${article.summary}</p>
+                                <div class="article-meta">
+                                    <span class="date">${new Date(article.published_at || article.created_at).toLocaleDateString()}</span>
+                                    <span class="views">${article.view_count} 阅读</span>
+                                </div>
+                            `;
+                            relatedArticlesElement.appendChild(articleElement);
+                        });
+                    } else {
+                        relatedArticlesElement.innerHTML = '<p>暂无相关文章</p>';
+                    }
+                })
+                .catch(error => {
+                    console.error('获取相关文章失败:', error);
+                    document.getElementById('related-articles').innerHTML = '<p>加载失败，请稍后再试</p>';
+                });
+        }
+
+        // 简单的Markdown渲染函数
+        function renderMarkdown(markdown) {
+            if (!markdown) return '';
+
+            // 替换标题
+            markdown = markdown.replace(/^# (.*?)$/gm, '<h1>$1</h1>');
+            markdown = markdown.replace(/^## (.*?)$/gm, '<h2>$1</h2>');
+            markdown = markdown.replace(/^### (.*?)$/gm, '<h3>$1</h3>');
+
+            // 替换粗体
+            markdown = markdown.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+            // 替换斜体
+            markdown = markdown.replace(/\*(.*?)\*/g, '<em>$1</em>');
+
+            // 替换链接
+            markdown = markdown.replace(/\[(.*?)\]\((.*?)\)/g, '<a href="$2">$1</a>');
+
+            // 替换无序列表
+            markdown = markdown.replace(/^\- (.*?)$/gm, '<li>$1</li>');
+            markdown = markdown.replace(/(<li>.*?<\/li>)\n(<li>)/g, '$1$2');
+            markdown = markdown.replace(/(<li>.*?<\/li>)+/g, '<ul>$&</ul>');
+
+            // 替换段落
+            markdown = markdown.replace(/^(?!<[a-z])(.*?)$/gm, '<p>$1</p>');
+
+            // 替换空行
+            markdown = markdown.replace(/<p><\/p>/g, '');
+
+            return markdown;
+        }
+    </script>
+</body>
+
+</html>
